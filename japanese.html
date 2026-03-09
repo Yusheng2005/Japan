@@ -193,7 +193,7 @@
             </div>
         </div>
 
-        <!-- 新增：題數選擇拉桿 -->
+        <!-- 題數選擇拉桿 -->
         <div class="setting-group">
             <h3>
                 <span>4. 測驗題數</span>
@@ -223,7 +223,7 @@
 </div>
 
 <script>
-    // 五十音資料庫 (h: 平假名, k: 片假名, r: 羅馬拼音)
+    // 五十音資料庫
     const gojuonData = [
         { label: 'あ行', items:[{h:'あ',k:'ア',r:'a'}, {h:'い',k:'イ',r:'i'}, {h:'う',k:'ウ',r:'u'}, {h:'え',k:'エ',r:'e'}, {h:'お',k:'オ',r:'o'}] },
         { label: 'か行', items:[{h:'か',k:'カ',r:'ka'}, {h:'き',k:'キ',r:'ki'}, {h:'く',k:'ク',r:'ku'}, {h:'け',k:'ケ',r:'ke'}, {h:'こ',k:'コ',r:'ko'}] },
@@ -238,12 +238,11 @@
         { label: 'ん', items:[{h:'ん',k:'ン',r:'n'}] }
     ];
 
-    // 初始化介面：動態生成範圍核取方塊
+    // 初始化介面
     const checkboxContainer = document.getElementById('range-checkboxes');
     gojuonData.forEach((group, index) => {
         const div = document.createElement('div');
         div.className = 'checkbox-item';
-        // 預設先勾選あ行
         const checkedStr = index === 0 ? 'checked' : '';
         div.innerHTML = `<label><input type="checkbox" value="${index}" class="range-cb" ${checkedStr}> ${group.label}</label>`;
         checkboxContainer.appendChild(div);
@@ -253,18 +252,28 @@
         document.querySelectorAll('.range-cb').forEach(cb => cb.checked = check);
     }
 
-    // 更新拉桿數字顯示
     function updateLimitDisplay(val) {
         document.getElementById('limit-display').innerText = val;
     }
 
+    // 陣列洗牌函數 (Fisher-Yates Shuffle)
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
     // 遊戲狀態變數
-    let currentPool =[];
+    let currentPool = [];
+    let questionBag =[]; // 抽籤筒
+    let previousQuestion = null; // 記錄上一題
+    
     let currentMode = '1'; 
     let charType = 'hiragana';
     let score = 0;
     let questionCount = 0;
-    let maxQuestions = 20; // 總題數
+    let maxQuestions = 20;
     let currentQuestion = null;
 
     // 開始測驗
@@ -272,7 +281,6 @@
         currentPool =[];
         const checkboxes = document.querySelectorAll('.range-cb:checked');
         
-        // 收集選取的字元到題庫中
         checkboxes.forEach(cb => {
             const index = parseInt(cb.value);
             currentPool = currentPool.concat(gojuonData[index].items);
@@ -283,12 +291,15 @@
             return;
         }
 
-        // 取得設定值
         currentMode = document.querySelector('input[name="mode"]:checked').value;
         charType = document.querySelector('input[name="charType"]:checked').value;
         maxQuestions = parseInt(document.getElementById('question-limit').value);
         
-        // 重置分數並切換畫面
+        // 準備抽籤筒
+        questionBag = [...currentPool];
+        shuffleArray(questionBag);
+        previousQuestion = null;
+
         score = 0;
         questionCount = 0;
         document.getElementById('setup-screen').style.display = 'none';
@@ -303,25 +314,40 @@
         document.getElementById('score-display').innerText = `分數: ${score}`;
         document.getElementById('count-display').innerText = `第 ${questionCount} / ${maxQuestions} 題`;
 
-        // 1. 隨機選出正確答案
-        const correctIdx = Math.floor(Math.random() * currentPool.length);
-        currentQuestion = currentPool[correctIdx];
+        // 1. 從「抽籤筒」選出正確答案
+        if (questionBag.length === 0) {
+            // 籤筒空了，重新填滿並打亂
+            questionBag = [...currentPool];
+            shuffleArray(questionBag);
+            
+            // 避免新一輪的第一題跟上一輪的最後一題連續重複 (陣列最後一個元素是被 pop 取出的)
+            if (questionBag[questionBag.length - 1] === previousQuestion && questionBag.length > 1) {
+                // 如果剛好重複了，把它跟籤筒底部的題目(第一個元素)交換
+                let temp = questionBag[questionBag.length - 1];
+                questionBag[questionBag.length - 1] = questionBag[0];
+                questionBag[0] = temp;
+            }
+        }
+        
+        // 取出籤筒裡的最後一個題目
+        currentQuestion = questionBag.pop();
+        previousQuestion = currentQuestion;
 
-        // 2. 選出兩個錯誤答案
+        // 2. 選出兩個錯誤答案 (從完整題庫隨機挑選作為混淆選項)
         let wrongOptions =[];
         while (wrongOptions.length < 2) {
             const randomIdx = Math.floor(Math.random() * currentPool.length);
             // 確保錯誤選項不等於正確選項，且沒有重複
-            if (randomIdx !== correctIdx && !wrongOptions.includes(currentPool[randomIdx])) {
+            if (currentPool[randomIdx] !== currentQuestion && !wrongOptions.includes(currentPool[randomIdx])) {
                 wrongOptions.push(currentPool[randomIdx]);
             }
         }
 
-        // 3. 組合選項並打亂順序
+        // 3. 組合三個選項並打亂順序
         let options =[currentQuestion, wrongOptions[0], wrongOptions[1]];
-        options.sort(() => Math.random() - 0.5);
+        shuffleArray(options); // 直接借用洗牌函數來打亂按鈕順序
 
-        // 4. 更新畫面 (判斷模式與字體)
+        // 4. 更新畫面
         const questionEl = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
@@ -353,7 +379,6 @@
 
     // 檢查答案
     function checkAnswer(clickedBtn, selectedVal, correctVal) {
-        // 鎖定所有按鈕，防止重複點擊
         const allBtns = document.querySelectorAll('.option-btn');
         allBtns.forEach(btn => btn.disabled = true);
 
@@ -363,7 +388,6 @@
             document.getElementById('score-display').innerText = `分數: ${score}`;
         } else {
             clickedBtn.classList.add('wrong');
-            // 找出並標示正確答案
             allBtns.forEach(btn => {
                 if (btn.innerText === correctVal) {
                     btn.classList.add('correct');
@@ -371,17 +395,16 @@
             });
         }
 
-        // 等待 0.5 秒 (500毫秒) 後判斷要進入下一題還是結束測驗
+        // 修改：等待 0.4 秒 (400毫秒) 後判斷要進入下一題還是結束測驗
         setTimeout(() => {
             if (questionCount >= maxQuestions) {
-                // 測驗結束，顯示成績並返回
                 const accuracy = Math.round((score / maxQuestions) * 100);
                 alert(`🎯 測驗結束！\n\n總題數：${maxQuestions} 題\n答對了：${score} 題\n正確率：${accuracy}%`);
                 goBack();
             } else {
                 nextQuestion();
             }
-        }, 500);
+        }, 400);
     }
 
     // 返回設定
