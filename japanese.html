@@ -39,6 +39,7 @@
         h1 {
             margin-top: 0;
             color: var(--primary-color);
+            font-size: 28px;
         }
 
         /* 設定區塊樣式 */
@@ -54,12 +55,45 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 16px;
+        }
+
+        /* 為了容納更多選項而新增的捲軸區塊 */
+        .scroll-box {
+            max-height: 160px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            padding: 10px;
+            border-radius: 6px;
+            background-color: #fafafa;
+        }
+
+        /* 美化捲軸 */
+        .scroll-box::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scroll-box::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 3px;
+        }
+
+        .category-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0 5px 0;
+            font-size: 14px;
+            border-bottom: 1px dashed #ddd;
+            padding-bottom: 3px;
+        }
+
+        .category-title:first-child {
+            margin-top: 0;
         }
 
         .checkbox-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+            gap: 8px;
         }
 
         .checkbox-item label {
@@ -67,6 +101,7 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            font-size: 14px;
         }
         
         /* 拉桿樣式 */
@@ -166,7 +201,7 @@
 <div class="container">
     <!-- 設定畫面 -->
     <div id="setup-screen">
-        <h1>五十音練習</h1>
+        <h1>五十音進階練習</h1>
         
         <div class="setting-group">
             <h3>1. 選擇模式</h3>
@@ -188,12 +223,12 @@
                     <button type="button" onclick="selectAll(false)" style="font-size:12px; cursor:pointer;">全不選</button>
                 </span>
             </h3>
-            <div class="checkbox-grid" id="range-checkboxes">
-                <!-- 透過 JS 動態產生核取方塊 -->
+            <!-- 修改：加上 scroll-box 以限制高度並加入捲軸 -->
+            <div class="scroll-box" id="range-checkboxes">
+                <!-- 透過 JS 動態產生分類與核取方塊 -->
             </div>
         </div>
 
-        <!-- 題數選擇拉桿 -->
         <div class="setting-group">
             <h3>
                 <span>4. 測驗題數</span>
@@ -223,8 +258,10 @@
 </div>
 
 <script>
-    // 五十音資料庫
-    const gojuonData = [
+    // 擴充版五十音資料庫 (加入濁音、半濁音、拗音)
+    // 註：為了區分，ぢ設為di，づ設為du
+    const gojuonData =[
+        // 清音 (0-10)
         { label: 'あ行', items:[{h:'あ',k:'ア',r:'a'}, {h:'い',k:'イ',r:'i'}, {h:'う',k:'ウ',r:'u'}, {h:'え',k:'エ',r:'e'}, {h:'お',k:'オ',r:'o'}] },
         { label: 'か行', items:[{h:'か',k:'カ',r:'ka'}, {h:'き',k:'キ',r:'ki'}, {h:'く',k:'ク',r:'ku'}, {h:'け',k:'ケ',r:'ke'}, {h:'こ',k:'コ',r:'ko'}] },
         { label: 'さ行', items:[{h:'さ',k:'サ',r:'sa'}, {h:'し',k:'シ',r:'shi'}, {h:'す',k:'ス',r:'su'}, {h:'せ',k:'セ',r:'se'}, {h:'そ',k:'ソ',r:'so'}] },
@@ -235,17 +272,61 @@
         { label: 'や行', items:[{h:'や',k:'ヤ',r:'ya'}, {h:'ゆ',k:'ユ',r:'yu'}, {h:'よ',k:'ヨ',r:'yo'}] },
         { label: 'ら行', items:[{h:'ら',k:'ラ',r:'ra'}, {h:'り',k:'リ',r:'ri'}, {h:'る',k:'ル',r:'ru'}, {h:'れ',k:'レ',r:'re'}, {h:'ろ',k:'ロ',r:'ro'}] },
         { label: 'わ行', items:[{h:'わ',k:'ワ',r:'wa'}, {h:'を',k:'ヲ',r:'wo'}] },
-        { label: 'ん', items:[{h:'ん',k:'ン',r:'n'}] }
+        { label: 'ん',   items:[{h:'ん',k:'ン',r:'n'}] },
+        
+        // 濁音 (11-14)
+        { label: 'が行', items:[{h:'が',k:'ガ',r:'ga'}, {h:'ぎ',k:'ギ',r:'gi'}, {h:'ぐ',k:'グ',r:'gu'}, {h:'げ',k:'ゲ',r:'ge'}, {h:'ご',k:'ゴ',r:'go'}] },
+        { label: 'ざ行', items:[{h:'ざ',k:'ザ',r:'za'}, {h:'じ',k:'ジ',r:'ji'}, {h:'ず',k:'ズ',r:'zu'}, {h:'ぜ',k:'ゼ',r:'ze'}, {h:'ぞ',k:'ゾ',r:'zo'}] },
+        { label: 'だ行', items:[{h:'だ',k:'ダ',r:'da'}, {h:'ぢ',k:'ヂ',r:'di'}, {h:'づ',k:'ヅ',r:'du'}, {h:'で',k:'デ',r:'de'}, {h:'ど',k:'ド',r:'do'}] },
+        { label: 'ば行', items:[{h:'ば',k:'バ',r:'ba'}, {h:'び',k:'ビ',r:'bi'}, {h:'ぶ',k:'ブ',r:'bu'}, {h:'べ',k:'ベ',r:'be'}, {h:'ぼ',k:'ボ',r:'bo'}] },
+        
+        // 半濁音 (15)
+        { label: 'ぱ行', items:[{h:'ぱ',k:'パ',r:'pa'}, {h:'ぴ',k:'ピ',r:'pi'}, {h:'ぷ',k:'プ',r:'pu'}, {h:'ぺ',k:'ペ',r:'pe'}, {h:'ぽ',k:'ポ',r:'po'}] },
+        
+        // 拗音 (16-26)
+        { label: 'きゃ行', items:[{h:'きゃ',k:'キャ',r:'kya'}, {h:'きゅ',k:'キュ',r:'kyu'}, {h:'きょ',k:'キョ',r:'kyo'}] },
+        { label: 'ぎゃ行', items:[{h:'ぎゃ',k:'ギャ',r:'gya'}, {h:'ぎゅ',k:'ギュ',r:'gyu'}, {h:'ぎょ',k:'ギョ',r:'gyo'}] },
+        { label: 'しゃ行', items:[{h:'しゃ',k:'シャ',r:'sha'}, {h:'しゅ',k:'シュ',r:'shu'}, {h:'しょ',k:'ショ',r:'sho'}] },
+        { label: 'じゃ行', items:[{h:'じゃ',k:'ジャ',r:'ja'}, {h:'じゅ',k:'ジュ',r:'ju'}, {h:'じょ',k:'ジョ',r:'jo'}] },
+        { label: 'ちゃ行', items:[{h:'ちゃ',k:'チャ',r:'cha'}, {h:'ちゅ',k:'チュ',r:'chu'}, {h:'ちょ',k:'チョ',r:'cho'}] },
+        { label: 'にゃ行', items:[{h:'にゃ',k:'ニャ',r:'nya'}, {h:'にゅ',k:'ニュ',r:'nyu'}, {h:'にょ',k:'ニョ',r:'nyo'}] },
+        { label: 'ひゃ行', items:[{h:'ひゃ',k:'ヒャ',r:'hya'}, {h:'ひゅ',k:'ヒュ',r:'hyu'}, {h:'ひょ',k:'ヒョ',r:'hyo'}] },
+        { label: 'びゃ行', items:[{h:'びゃ',k:'ビャ',r:'bya'}, {h:'びゅ',k:'ビュ',r:'byu'}, {h:'びょ',k:'ビョ',r:'byo'}] },
+        { label: 'ぴゃ行', items:[{h:'ぴゃ',k:'ピャ',r:'pya'}, {h:'ぴゅ',k:'ピュ',r:'pyu'}, {h:'ぴょ',k:'ピョ',r:'pyo'}] },
+        { label: 'みゃ行', items:[{h:'みゃ',k:'ミャ',r:'mya'}, {h:'みゅ',k:'ミュ',r:'myu'}, {h:'みょ',k:'ミョ',r:'myo'}] },
+        { label: 'りゃ行', items:[{h:'りゃ',k:'リャ',r:'rya'}, {h:'りゅ',k:'リュ',r:'ryu'}, {h:'りょ',k:'リョ',r:'ryo'}] }
     ];
 
-    // 初始化介面
+    // 初始化介面：透過分類動態生成核取方塊
+    const categories =[
+        { name: '清音', start: 0, end: 10 },
+        { name: '濁音 / 半濁音', start: 11, end: 15 },
+        { name: '拗音', start: 16, end: 26 }
+    ];
+
     const checkboxContainer = document.getElementById('range-checkboxes');
-    gojuonData.forEach((group, index) => {
-        const div = document.createElement('div');
-        div.className = 'checkbox-item';
-        const checkedStr = index === 0 ? 'checked' : '';
-        div.innerHTML = `<label><input type="checkbox" value="${index}" class="range-cb" ${checkedStr}> ${group.label}</label>`;
-        checkboxContainer.appendChild(div);
+    
+    categories.forEach(cat => {
+        // 加入分類標題
+        const title = document.createElement('div');
+        title.className = 'category-title';
+        title.innerText = cat.name;
+        checkboxContainer.appendChild(title);
+
+        // 加入該分類的選項網格
+        const grid = document.createElement('div');
+        grid.className = 'checkbox-grid';
+        
+        for (let i = cat.start; i <= cat.end; i++) {
+            const group = gojuonData[i];
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+            // 預設僅先勾選最前面的「あ行」
+            const checkedStr = i === 0 ? 'checked' : '';
+            div.innerHTML = `<label><input type="checkbox" value="${i}" class="range-cb" ${checkedStr}> ${group.label}</label>`;
+            grid.appendChild(div);
+        }
+        checkboxContainer.appendChild(grid);
     });
 
     function selectAll(check) {
@@ -256,7 +337,7 @@
         document.getElementById('limit-display').innerText = val;
     }
 
-    // 陣列洗牌函數 (Fisher-Yates Shuffle)
+    // 陣列洗牌函數
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -266,8 +347,8 @@
 
     // 遊戲狀態變數
     let currentPool = [];
-    let questionBag =[]; // 抽籤筒
-    let previousQuestion = null; // 記錄上一題
+    let questionBag =[]; 
+    let previousQuestion = null; 
     
     let currentMode = '1'; 
     let charType = 'hiragana';
@@ -275,6 +356,9 @@
     let questionCount = 0;
     let maxQuestions = 20;
     let currentQuestion = null;
+
+    // 取得日文字元的幫助函數 (依照平假/片假設定)
+    const getJpChar = (item) => charType === 'hiragana' ? item.h : item.k;
 
     // 開始測驗
     function startQuiz() {
@@ -295,7 +379,6 @@
         charType = document.querySelector('input[name="charType"]:checked').value;
         maxQuestions = parseInt(document.getElementById('question-limit').value);
         
-        // 準備抽籤筒
         questionBag = [...currentPool];
         shuffleArray(questionBag);
         previousQuestion = null;
@@ -316,46 +399,43 @@
 
         // 1. 從「抽籤筒」選出正確答案
         if (questionBag.length === 0) {
-            // 籤筒空了，重新填滿並打亂
             questionBag = [...currentPool];
             shuffleArray(questionBag);
-            
-            // 避免新一輪的第一題跟上一輪的最後一題連續重複 (陣列最後一個元素是被 pop 取出的)
             if (questionBag[questionBag.length - 1] === previousQuestion && questionBag.length > 1) {
-                // 如果剛好重複了，把它跟籤筒底部的題目(第一個元素)交換
                 let temp = questionBag[questionBag.length - 1];
                 questionBag[questionBag.length - 1] = questionBag[0];
                 questionBag[0] = temp;
             }
         }
         
-        // 取出籤筒裡的最後一個題目
         currentQuestion = questionBag.pop();
         previousQuestion = currentQuestion;
 
-        // 2. 選出兩個錯誤答案 (從完整題庫隨機挑選作為混淆選項)
+        // 2. 嚴謹地選出兩個錯誤答案 (確保外觀文字與羅馬音都不會跟答案或彼此重複)
         let wrongOptions =[];
         while (wrongOptions.length < 2) {
             const randomIdx = Math.floor(Math.random() * currentPool.length);
-            // 確保錯誤選項不等於正確選項，且沒有重複
-            if (currentPool[randomIdx] !== currentQuestion && !wrongOptions.includes(currentPool[randomIdx])) {
-                wrongOptions.push(currentPool[randomIdx]);
+            const candidate = currentPool[randomIdx];
+            
+            const isDuplicateItem = candidate === currentQuestion || wrongOptions.includes(candidate);
+            const isDuplicateText = candidate.r === currentQuestion.r || getJpChar(candidate) === getJpChar(currentQuestion);
+            const isDuplicateInWrongOpts = wrongOptions.some(opt => opt.r === candidate.r || getJpChar(opt) === getJpChar(candidate));
+
+            if (!isDuplicateItem && !isDuplicateText && !isDuplicateInWrongOpts) {
+                wrongOptions.push(candidate);
             }
         }
 
         // 3. 組合三個選項並打亂順序
-        let options =[currentQuestion, wrongOptions[0], wrongOptions[1]];
-        shuffleArray(options); // 直接借用洗牌函數來打亂按鈕順序
+        let options = [currentQuestion, wrongOptions[0], wrongOptions[1]];
+        shuffleArray(options);
 
         // 4. 更新畫面
         const questionEl = document.getElementById('question-text');
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
 
-        const getJpChar = (item) => charType === 'hiragana' ? item.h : item.k;
-
         if (currentMode === '1') {
-            // 模式1：日文 ➔ 羅馬
             questionEl.innerText = getJpChar(currentQuestion);
             options.forEach(opt => {
                 const btn = document.createElement('button');
@@ -365,7 +445,6 @@
                 optionsContainer.appendChild(btn);
             });
         } else {
-            // 模式2：羅馬 ➔ 日文
             questionEl.innerText = currentQuestion.r;
             options.forEach(opt => {
                 const btn = document.createElement('button');
@@ -395,7 +474,6 @@
             });
         }
 
-        // 修改：等待 0.4 秒 (400毫秒) 後判斷要進入下一題還是結束測驗
         setTimeout(() => {
             if (questionCount >= maxQuestions) {
                 const accuracy = Math.round((score / maxQuestions) * 100);
@@ -404,7 +482,7 @@
             } else {
                 nextQuestion();
             }
-        }, 400);
+        }, 400); // 0.4 秒換題
     }
 
     // 返回設定
