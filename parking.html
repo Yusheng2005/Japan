@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本仙台停車費用試算機 (24H制)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        body {
+            background-color: #f3f4f6;
+            color: #333;
+            margin: 0;
+            padding: 20px 15px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .input-field {
+            margin-bottom: 18px;
+        }
+        .input-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4b5563;
+        }
+        .datetime-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .datetime-row input[type="date"] {
+            flex: 2;
+            padding: 12px 10px;
+            font-size: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #f9fafb;
+        }
+        .datetime-row select {
+            flex: 1;
+            padding: 12px 5px;
+            font-size: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            text-align: center;
+        }
+        .datetime-row span {
+            font-weight: bold;
+            color: #6b7280;
+        }
+        .calc-btn {
+            width: 100%;
+            background-color: #3b82f6;
+            color: white;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .calc-btn:hover {
+            background-color: #2563eb;
+        }
+        .duration-display {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 20px;
+        }
+        .card {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+            border-left: 5px solid #3b82f6;
+        }
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.1rem;
+            color: #1f2937;
+        }
+        .card .rules {
+            font-size: 0.85rem;
+            color: #6b7280;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            background: #f9fafb;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .card .fee-result {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: right;
+        }
+        .card .fee-amount {
+            font-size: 1.4rem;
+            color: #e11d48;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🚘 停車費用試算機</h1>
+
+    <div class="input-group">
+        <div class="input-field">
+            <label>預計停入時間</label>
+            <div class="datetime-row">
+                <input type="date" id="entryDate">
+                <select id="entryHour"></select><span>:</span><select id="entryMinute"></select>
+            </div>
+        </div>
+        <div class="input-field">
+            <label>預計駛出時間</label>
+            <div class="datetime-row">
+                <input type="date" id="exitDate">
+                <select id="exitHour"></select><span>:</span><select id="exitMinute"></select>
+            </div>
+        </div>
+        <button class="calc-btn" onclick="calculateFee()">計算費用</button>
+    </div>
+
+    <div id="duration" class="duration-display"></div>
+    <div id="results"></div>
+</div>
+
+<script>
+    // 停車場規則設定
+    const lots =[
+        {
+            name: "停車場 1：ParkJapan",
+            rulesText: "07:00～19:00：200円 / 30分 (最大1600円)<br>19:00～07:00：100円 / 60分 (最大300円)",
+            rules: { start: 7, end: 19, dayRate: 200, dayUnit: 30, dayMax: 1600, nightRate: 100, nightUnit: 60, nightMax: 300 }
+        },
+        {
+            name: "停車場 2：三井Repark 仙台五橋１丁目",
+            rulesText: "07:00～19:00：200円 / 30分 (最大1700円)<br>19:00～07:00：100円 / 40分 (最大500円)",
+            rules: { start: 7, end: 19, dayRate: 200, dayUnit: 30, dayMax: 1700, nightRate: 100, nightUnit: 40, nightMax: 500 }
+        },
+        {
+            name: "停車場 3：TIMES",
+            rulesText: "07:00～22:00：200円 / 30分 (最大1600円)<br>22:00～07:00：200円 / 30分 (最大500円)",
+            rules: { start: 7, end: 22, dayRate: 200, dayUnit: 30, dayMax: 1600, nightRate: 200, nightUnit: 30, nightMax: 500 }
+        },
+        {
+            name: "停車場 4：三井Repark 仙台河原町駅東",
+            rulesText: "07:00～18:00：200円 / 40分 (最大800円)<br>18:00～07:00：200円 / 60分 (最大400円)",
+            rules: { start: 7, end: 18, dayRate: 200, dayUnit: 40, dayMax: 800, nightRate: 200, nightUnit: 60, nightMax: 400 }
+        }
+    ];
+
+    // 初始化下拉選單與預設時間
+    window.onload = () => {
+        const pad = (n) => n.toString().padStart(2, '0');
+        
+        // 產生 24小時 與 60分鐘 的選項
+        const hoursHTML = Array.from({length: 24}, (_, i) => `<option value="${i}">${pad(i)}</option>`).join('');
+        const minsHTML = Array.from({length: 60}, (_, i) => `<option value="${i}">${pad(i)}</option>`).join('');
+        
+        document.getElementById('entryHour').innerHTML = hoursHTML;
+        document.getElementById('entryMinute').innerHTML = minsHTML;
+        document.getElementById('exitHour').innerHTML = hoursHTML;
+        document.getElementById('exitMinute').innerHTML = minsHTML;
+
+        // 設定預設時間：現在 ~ 明天此時
+        const now = new Date();
+        const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000); 
+
+        const formatDate = (date) => `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+
+        document.getElementById('entryDate').value = formatDate(now);
+        document.getElementById('entryHour').value = now.getHours();
+        document.getElementById('entryMinute').value = now.getMinutes();
+
+        document.getElementById('exitDate').value = formatDate(tomorrow);
+        document.getElementById('exitHour').value = tomorrow.getHours();
+        document.getElementById('exitMinute').value = tomorrow.getMinutes();
+
+        // 渲染結果區塊
+        const container = document.getElementById('results');
+        container.innerHTML = lots.map((lot, i) => `
+            <div class="card">
+                <h3>${lot.name}</h3>
+                <div class="rules">${lot.rulesText}</div>
+                <div class="fee-result">
+                    預估費用: <span class="fee-amount" id="fee-${i}">0 円</span>
+                </div>
+            </div>
+        `).join('');
+
+        calculateFee();
+    };
+
+    // 取得使用者選擇的完整時間物件
+    function getSelectedDate(type) {
+        const dateVal = document.getElementById(`${type}Date`).value;
+        const hourVal = document.getElementById(`${type}Hour`).value;
+        const minVal = document.getElementById(`${type}Minute`).value;
+        if (!dateVal) return null;
+        return new Date(`${dateVal}T${hourVal.padStart(2, '0')}:${minVal.padStart(2, '0')}:00`);
+    }
+
+    // 計算費用核心邏輯
+    function calculateFee() {
+        const entryDate = getSelectedDate('entry');
+        const exitDate = getSelectedDate('exit');
+
+        if (!entryDate || !exitDate) {
+            alert("請完整選擇日期與時間！");
+            return;
+        }
+
+        if (entryDate >= exitDate) {
+            alert("駛出時間必須晚於駛入時間！");
+            return;
+        }
+
+        // 顯示總時長
+        const durationMs = exitDate - entryDate;
+        const totalHours = Math.floor(durationMs / 3600000);
+        const totalMins = Math.floor((durationMs % 3600000) / 60000);
+        document.getElementById("duration").innerText = `總計停放時間：${totalHours} 小時 ${totalMins} 分鐘`;
+
+        // 針對每個停車場計算
+        lots.forEach((lot, index) => {
+            let totalFee = 0;
+            let currentTime = new Date(entryDate);
+
+            // 切割時間區塊計算 (白天 / 晚上)
+            while (currentTime < exitDate) {
+                let h = currentTime.getHours();
+                let isDay = (h >= lot.rules.start && h < lot.rules.end);
+
+                // 找尋下一個計費切換點 (例如 07:00 或 夜間開始時間)
+                let nextBoundary = new Date(currentTime);
+                nextBoundary.setMinutes(0, 0, 0);
+
+                if (isDay) {
+                    nextBoundary.setHours(lot.rules.end);
+                } else {
+                    nextBoundary.setHours(lot.rules.start);
+                    // 如果現在已經過了晚上，那下一個白天是明天
+                    if (h >= lot.rules.end) {
+                        nextBoundary.setDate(nextBoundary.getDate() + 1);
+                    }
+                }
+
+                // 這一個計算區塊的結束時間 (不能超過駛出時間)
+                let chunkEnd = new Date(Math.min(nextBoundary, exitDate));
+                let chunkMinutes = (chunkEnd - currentTime) / 60000;
+
+                // 決定該區塊的費率與上限
+                let rate = isDay ? lot.rules.dayRate : lot.rules.nightRate;
+                let unit = isDay ? lot.rules.dayUnit : lot.rules.nightUnit;
+                let max = isDay ? lot.rules.dayMax : lot.rules.nightMax;
+
+                if (chunkMinutes > 0) {
+                    // 無條件進位 (如停 10 分鐘，算 1 個單位)
+                    let units = Math.ceil(chunkMinutes / unit);
+                    let cost = units * rate;
+                    
+                    // 判斷是否達該時段的最大收費上限
+                    if (max > 0) {
+                        cost = Math.min(cost, max);
+                    }
+                    totalFee += cost;
+                }
+                
+                // 推進時間
+                currentTime = chunkEnd;
+            }
+
+            // 更新畫面金額
+            document.getElementById(`fee-${index}`).innerText = `${totalFee.toLocaleString()} 円`;
+        });
+    }
+</script>
+
+</body>
+</html>
