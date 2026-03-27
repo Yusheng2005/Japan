@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>仙台停車場混雜查詢</title>
+    <style>
+        /* 基本重置與字型設定 */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Microsoft JhengHei', sans-serif;
+            /* 柔和的漸層背景，避免畫面太空白 */
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* 主內容卡片 */
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .icon-header {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            letter-spacing: 1px;
+        }
+
+        p.description {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        /* 按鈕列表設計 */
+        .link-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .link-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            text-decoration: none;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.05rem;
+            transition: all 0.3s ease;
+        }
+
+        /* 三井 Repark 停車場風格 (柔和綠) */
+        .repark {
+            background-color: #eafaf1;
+            color: #1d8348;
+            border: 1px solid #abebc6;
+        }
+
+        .repark:hover {
+            background-color: #d5f5e3;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(29, 131, 72, 0.2);
+        }
+
+        /* Times 停車場風格 (柔和黃) */
+        .times {
+            background-color: #fef9e7;
+            color: #b7950b;
+            border: 1px solid #f9e79f;
+        }
+
+        .times:hover {
+            background-color: #fcf3cf;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(183, 149, 11, 0.2);
+        }
+
+        .btn-icon {
+            font-size: 1.2rem;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="icon-header">🅿️</div>
+        <h1>仙台停車場混雜查詢</h1>
+        <p class="description">請點選下方停車場，將會自動開啟網頁並顯示即時的空位與混雜狀況。</p>
+        
+        <div class="link-group">
+            <!-- 網址 1 -->
+            <a href="https://www.repark.jp/parking_user/time/result/detail/?park=REP0026674&p=&st=" target="_blank" rel="noopener noreferrer" class="link-btn repark">
+                <span>三井 リパーク (仙台五橋1丁目)</span>
+                <span class="btn-icon">🟢</span>
+            </a>
+
+            <!-- 網址 2 -->
+            <a href="https://times-info.net/P04-miyagi/C101/park-detail-BUK0014583/" target="_blank" rel="noopener noreferrer" class="link-btn times">
+                <span>Times 停車場 (仙台五橋)</span>
+                <span class="btn-icon">🟡</span>
+            </a>
+
+            <!-- 網址 3 -->
+            <a href="https://www.repark.jp/parking_user/time/result/detail/?park=REP0028388" target="_blank" rel="noopener noreferrer" class="link-btn repark">
+                <span>三井 リパーク (仙台河原町站東)</span>
+                <span class="btn-icon">🟢</span>
+            </a>
+        </div>
+
+        <div class="footer-text">
+            © 點擊按鈕將於新分頁開啟查詢系統
+        </div>
+    </div>
+
+</body>
+</html>
